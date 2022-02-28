@@ -1,14 +1,27 @@
 import cv2
+import datetime
 import dlib
 import time
 import math
-
-
+import mysql.connector
+mydb=mysql.connector.connect(host="localhost", user="root", password="5504", database="GOBI")
+mycursor=mydb.cursor()
 carCascade = cv2.CascadeClassifier('computer_memories_about_cars.xml')
-video = cv2.VideoCapture('comp_eyes_2.mp4')
-
+video = cv2.VideoCapture('comp_eyes_2_1.mp4')
+key_id = []
 WIDTH = 1280
 HEIGHT = 720
+def storestuff(id,speed):
+    myquery="INSERT INTO SPEED(ID,SPEED,TIME) VALUES(%s,%s,%s)"
+    mydata=(id, speed,datetime.datetime.now())
+    mycursor.execute(myquery, mydata)
+    mydb.commit()
+
+def maxspeed():
+    mycursor.execute("SELECT ID, MAX(SPEED) FROM SPEED GROUP BY ID")
+    myrecords=mycursor.fetchall()
+    for x in myrecords:
+        print (x)
 
 def estimateSpeed(location1, location2):
     d_pixels = math.sqrt(math.pow(location2[0] - location1[0], 2) + math.pow(location2[1] - location1[1], 2))
@@ -131,6 +144,7 @@ def trackMultipleObjects():
 
                     if speed[i] != None and y1 >= 180:
                         cv2.putText(resultImage, str(int(speed[i])) + "km/h", (int(x1 + w1/2), int(y1-5)), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 100) ,2)
+                        storestuff(i,int(speed[i]))
 
         cv2.imshow('I spy with my little eye', resultImage)
 
@@ -145,3 +159,6 @@ def trackMultipleObjects():
 
 if __name__ == '__main__':
     trackMultipleObjects()
+    maxspeed()
+    mycursor.execute("DELETE FROM SPEED")
+    mydb.commit()
